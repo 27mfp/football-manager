@@ -1,0 +1,26 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Player {
+  id        Int     @id @default(autoincrement())
+  name      String
+  teamAMatches Match[] @relation("TeamA")
+  teamBMatches Match[] @relation("TeamB")
+}
+
+model Match {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  time      String
+  price     Float
+  location  String
+  result    String?
+  teamA     Player[] @relation("TeamA")
+  teamB     Player[] @relation("TeamB")
+}
