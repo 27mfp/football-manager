@@ -10,6 +10,8 @@ generator client {
 model Player {
   id        Int     @id @default(autoincrement())
   name      String
+  elo       Float   @default(1500)
+  paid      Boolean @default(false)
   teamAMatches Match[] @relation("TeamA")
   teamBMatches Match[] @relation("TeamB")
 }
