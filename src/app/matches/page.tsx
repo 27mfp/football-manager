@@ -6,8 +6,11 @@ const prisma = new PrismaClient();
 async function getMatches() {
   return await prisma.match.findMany({
     include: {
-      teamA: true,
-      teamB: true,
+      players: {
+        include: {
+          player: true,
+        },
+      },
     },
     orderBy: {
       date: "desc",
@@ -29,9 +32,11 @@ export default async function Matches() {
       </Link>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {matches.map((match) => {
-          const totalPlayers = match.teamA.length + match.teamB.length;
+          const totalPlayers = match.players.length;
           const pricePerPlayer =
             totalPlayers > 0 ? match.price / totalPlayers : 0;
+          const teamA = match.players.filter((pm) => pm.team === "A");
+          const teamB = match.players.filter((pm) => pm.team === "B");
 
           return (
             <div
@@ -48,33 +53,45 @@ export default async function Matches() {
               <div className="mt-2">
                 <p className="font-semibold">Team A:</p>
                 <ul className="list-disc list-inside">
-                  {match.teamA.map((player) => (
-                    <li key={player.id}>{player.name}</li>
+                  {teamA.map((pm) => (
+                    <li key={pm.id}>
+                      {pm.player.name}
+                      <span
+                        className={pm.paid ? "text-green-500" : "text-red-500"}
+                      >
+                        {pm.paid ? " (Paid)" : " (Unpaid)"}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               </div>
               <div className="mt-2">
                 <p className="font-semibold">Team B:</p>
                 <ul className="list-disc list-inside">
-                  {match.teamB.map((player) => (
-                    <li key={player.id}>{player.name}</li>
+                  {teamB.map((pm) => (
+                    <li key={pm.id}>
+                      {pm.player.name}
+                      <span
+                        className={pm.paid ? "text-green-500" : "text-red-500"}
+                      >
+                        {pm.paid ? " (Paid)" : " (Unpaid)"}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               </div>
               <Link
                 href={`/matches/${match.id}/edit`}
-                className="text-blue-500 dark:text-blue-400 mt-2 inline-block"
+                className="text-blue-500 dark:text-blue-400 mt-2 inline-block mr-2"
               >
                 Edit Match
               </Link>
-              <div>
-                <Link
-                  href={`/matches/${match.id}/payments`}
-                  className="text-blue-500 dark:text-blue-400 mt-2 inline-block"
-                >
-                  Manage Payments
-                </Link>
-              </div>
+              <Link
+                href={`/matches/${match.id}/payments`}
+                className="text-blue-500 dark:text-blue-400 mt-2 inline-block"
+              >
+                Manage Payments
+              </Link>
             </div>
           );
         })}

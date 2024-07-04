@@ -1,28 +1,40 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
-model Player {
-  id        Int     @id @default(autoincrement())
-  name      String
-  elo       Float   @default(1500)
-  paid      Boolean @default(false)
-  teamAMatches Match[] @relation("TeamA")
-  teamBMatches Match[] @relation("TeamB")
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model Match {
-  id        Int      @id @default(autoincrement())
+  id        Int           @id @default(autoincrement())
   date      DateTime
   time      String
   price     Float
   location  String
   result    String?
-  teamA     Player[] @relation("TeamA")
-  teamB     Player[] @relation("TeamB")
+  players   PlayerMatch[]
+}
+
+model Player {
+  id           Int           @id @default(autoincrement())
+  name         String
+  elo          Float         @default(1500)
+  matches      PlayerMatch[]
+}
+
+model PlayerMatch {
+  id        Int     @id @default(autoincrement())
+  player    Player  @relation(fields: [playerId], references: [id])
+  playerId  Int
+  match     Match   @relation(fields: [matchId], references: [id])
+  matchId   Int
+  team      String  // "A" or "B"
+  paid      Boolean @default(false)
+
+  @@unique([playerId, matchId])
 }

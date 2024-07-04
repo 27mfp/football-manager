@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
-interface Player {
+interface PlayerMatch {
   id: number;
-  name: string;
+  player: {
+    id: number;
+    name: string;
+  };
   paid: boolean;
+  team: string;
 }
 
 interface Match {
@@ -15,30 +19,29 @@ interface Match {
   time: string;
   price: number;
   location: string;
-  teamA: Player[];
-  teamB: Player[];
+  players: PlayerMatch[];
 }
 
 export default function MatchPayments({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [match, setMatch] = useState<Match | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
+  const [playerMatches, setPlayerMatches] = useState<PlayerMatch[]>([]);
 
-  useEffect(() => {
-    fetchMatch();
-  }, []);
-
-  const fetchMatch = async () => {
+  const fetchMatch = useCallback(async () => {
     const res = await fetch(`/api/matches/${params.id}`);
     const data = await res.json();
     setMatch(data);
-    setPlayers([...data.teamA, ...data.teamB]);
-  };
+    setPlayerMatches(data.players);
+  }, [params.id]);
 
-  const handlePaymentToggle = (playerId: number) => {
-    setPlayers(
-      players.map((player) =>
-        player.id === playerId ? { ...player, paid: !player.paid } : player
+  useEffect(() => {
+    fetchMatch();
+  }, [fetchMatch]);
+
+  const handlePaymentToggle = (playerMatchId: number) => {
+    setPlayerMatches(
+      playerMatches.map((pm) =>
+        pm.id === playerMatchId ? { ...pm, paid: !pm.paid } : pm
       )
     );
   };
@@ -47,13 +50,10 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
     const res = await fetch(`/api/matches/${params.id}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ players }),
+      body: JSON.stringify({ playerMatches }),
     });
 
     if (res.ok) {
-      // Fetch the updated match and player data
-      const updatedMatch = await res.json();
-      setPlayers(updatedMatch.players);
       router.push("/matches");
       router.refresh();
     }
@@ -61,7 +61,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
 
   if (!match) return <div>Loading...</div>;
 
-  const pricePerPlayer = match.price / players.length;
+  const pricePerPlayer = match.price / playerMatches.length;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -71,21 +71,23 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
       </p>
       <p className="mb-4">Price per player: ${pricePerPlayer.toFixed(2)}</p>
       <div className="space-y-2">
-        {players.map((player) => (
+        {playerMatches.map((pm) => (
           <div
-            key={player.id}
+            key={pm.id}
             className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded shadow"
           >
-            <span>{player.name}</span>
+            <span>
+              {pm.player.name} (Team {pm.team})
+            </span>
             <button
-              onClick={() => handlePaymentToggle(player.id)}
+              onClick={() => handlePaymentToggle(pm.id)}
               className={`px-4 py-2 rounded ${
-                player.paid
+                pm.paid
                   ? "bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800"
                   : "bg-red-500 hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-800"
               } text-white`}
             >
-              {player.paid ? "Paid" : "Unpaid"}
+              {pm.paid ? "Paid" : "Unpaid"}
             </button>
           </div>
         ))}

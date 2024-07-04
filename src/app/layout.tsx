@@ -32,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={darkMode ? "dark" : ""}>
       <body className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
-        <nav className="bg-blue-600 dark:bg-blue-800 text-white p-4">
+        <nav className="bg-blue-600 dark:bg-slate-800 text-white p-4">
           <div className="container mx-auto flex justify-between items-center">
             <h1 className="text-2xl font-bold">Football Manager</h1>
             <div className="space-x-4 flex items-center">

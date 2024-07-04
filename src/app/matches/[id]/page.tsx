@@ -1,204 +1,106 @@
-"use client";
+import { PrismaClient } from "@prisma/client";
+import Link from "next/link";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+const prisma = new PrismaClient();
 
-interface Player {
-  id: number;
-  name: string;
+async function getMatch(id: string) {
+  return await prisma.match.findUnique({
+    where: { id: parseInt(id) },
+    include: {
+      players: {
+        include: {
+          player: true,
+        },
+      },
+    },
+  });
 }
 
-interface Match {
-  id: number;
-  date: string;
-  time: string;
-  price: number;
-  location: string;
-  result: string | null;
-  teamA: Player[];
-  teamB: Player[];
-}
+export default async function MatchDetail({
+  params,
+}: {
+  params: { id: string };
+}) {
+  const match = await getMatch(params.id);
 
-export default function EditMatch({ params }: { params: { id: string } }) {
-  const router = useRouter();
-  const [match, setMatch] = useState<Match | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [price, setPrice] = useState("");
-  const [location, setLocation] = useState("");
-  const [result, setResult] = useState("");
-  const [teamA, setTeamA] = useState<number[]>([]);
-  const [teamB, setTeamB] = useState<number[]>([]);
+  if (!match) {
+    return <div>Match not found</div>;
+  }
 
-  useEffect(() => {
-    fetchMatch();
-    fetchPlayers();
-  }, []);
-
-  const fetchMatch = async () => {
-    const res = await fetch(`/api/matches/${params.id}`);
-    const data = await res.json();
-    setMatch(data);
-    setDate(data.date.split("T")[0]);
-    setTime(data.time);
-    setPrice(data.price.toString());
-    setLocation(data.location);
-    setResult(data.result || "");
-    setTeamA(data.teamA.map((p: Player) => p.id));
-    setTeamB(data.teamB.map((p: Player) => p.id));
-  };
-
-  const fetchPlayers = async () => {
-    const res = await fetch("/api/players");
-    const data = await res.json();
-    setPlayers(data);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await fetch(`/api/matches/${params.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        time,
-        price: parseFloat(price),
-        location,
-        result,
-        teamA,
-        teamB,
-      }),
-    });
-    if (res.ok) {
-      router.push("/matches");
-      router.refresh();
-    }
-  };
-
-  if (!match) return <div>Loading...</div>;
+  const teamA = match.players.filter((pm) => pm.team === "A");
+  const teamB = match.players.filter((pm) => pm.team === "B");
 
   return (
     <div className="max-w-2xl mx-auto">
-      <h2 className="text-3xl font-bold mb-4">Edit Match</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="date" className="block mb-2">
-            Date:
-          </label>
-          <input
-            type="date"
-            id="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="time" className="block mb-2">
-            Time:
-          </label>
-          <input
-            type="time"
-            id="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="price" className="block mb-2">
-            Price:
-          </label>
-          <input
-            type="number"
-            id="price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-            step="0.01"
-          />
-        </div>
-        <div>
-          <label htmlFor="location" className="block mb-2">
-            Location:
-          </label>
-          <input
-            type="text"
-            id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="result" className="block mb-2">
-            Result:
-          </label>
-          <input
-            type="text"
-            id="result"
-            value={result}
-            onChange={(e) => setResult(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="e.g. 3-2"
-          />
-        </div>
-        <div>
-          <label className="block mb-2">Team A (select 5 players):</label>
-          <select
-            multiple
-            value={teamA.map(String)}
-            onChange={(e) =>
-              setTeamA(
-                Array.from(e.target.selectedOptions, (option) =>
-                  Number(option.value)
-                )
-              )
-            }
-            className="w-full p-2 border rounded"
-            size={5}
-          >
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
+      <h2 className="text-3xl font-bold mb-4">Match Details</h2>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <p>
+          <strong>Date:</strong> {new Date(match.date).toLocaleDateString()}
+        </p>
+        <p>
+          <strong>Time:</strong> {match.time}
+        </p>
+        <p>
+          <strong>Location:</strong> {match.location}
+        </p>
+        <p>
+          <strong>Price:</strong> ${match.price.toFixed(2)}
+        </p>
+        <p>
+          <strong>Result:</strong> {match.result || "Not played yet"}
+        </p>
+
+        <div className="mt-4">
+          <h3 className="text-xl font-semibold mb-2">Team A</h3>
+          <ul className="list-disc list-inside">
+            {teamA.map((pm) => (
+              <li key={pm.id}>
+                {pm.player.name} (Elo: {pm.player.elo.toFixed(0)})
+                <span
+                  className={`ml-2 ${
+                    pm.paid ? "text-green-500" : "text-red-500"
+                  }`}
+                >
+                  {pm.paid ? "Paid" : "Unpaid"}
+                </span>
+              </li>
             ))}
-          </select>
+          </ul>
         </div>
-        <div>
-          <label className="block mb-2">Team B (select 5 players):</label>
-          <select
-            multiple
-            value={teamB.map(String)}
-            onChange={(e) =>
-              setTeamB(
-                Array.from(e.target.selectedOptions, (option) =>
-                  Number(option.value)
-                )
-              )
-            }
-            className="w-full p-2 border rounded"
-            size={5}
-          >
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
+
+        <div className="mt-4">
+          <h3 className="text-xl font-semibold mb-2">Team B</h3>
+          <ul className="list-disc list-inside">
+            {teamB.map((pm) => (
+              <li key={pm.id}>
+                {pm.player.name} (Elo: {pm.player.elo.toFixed(0)})
+                <span
+                  className={`ml-2 ${
+                    pm.paid ? "text-green-500" : "text-red-500"
+                  }`}
+                >
+                  {pm.paid ? "Paid" : "Unpaid"}
+                </span>
+              </li>
             ))}
-          </select>
+          </ul>
         </div>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Update Match
-        </button>
-      </form>
+
+        <div className="mt-6 space-x-4">
+          <Link
+            href={`/matches/${match.id}/edit`}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+          >
+            Edit Match
+          </Link>
+          <Link
+            href={`/matches/${match.id}/payments`}
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700"
+          >
+            Manage Payments
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

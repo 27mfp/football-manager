@@ -6,16 +6,13 @@ const prisma = new PrismaClient();
 async function getPlayers() {
   return await prisma.player.findMany({
     include: {
-      teamAMatches: {
+      matches: {
         include: {
-          teamA: true,
-          teamB: true,
-        },
-      },
-      teamBMatches: {
-        include: {
-          teamA: true,
-          teamB: true,
+          match: {
+            include: {
+              players: true,
+            },
+          },
         },
       },
     },
@@ -39,30 +36,32 @@ export default async function Players() {
       </Link>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {players.map((player) => {
-          const allMatches = [...player.teamAMatches, ...player.teamBMatches];
-          const totalToPay = allMatches.reduce((sum, match) => {
-            const totalPlayers = match.teamA.length + match.teamB.length;
-            return sum + match.price / totalPlayers;
+          const totalToPay = player.matches.reduce((sum, pm) => {
+            const match = pm.match;
+            const playersInMatch = match.players.length;
+            const pricePerPlayer =
+              playersInMatch > 0 ? match.price / playersInMatch : 0;
+            return sum + (pm.paid ? 0 : pricePerPlayer);
           }, 0);
 
           return (
             <div
               key={player.id}
-              className="bg-white dark:bg-gray-800 p-4 rounded shadow"
+              className="bg-white dark:bg-slate-800 p-4 rounded shadow"
             >
               <h3 className="text-xl font-bold">{player.name}</h3>
               <p className="text-gray-600 dark:text-gray-300">
                 Elo Rating: {player.elo.toFixed(0)}
               </p>
               <p className="text-gray-600 dark:text-gray-300">
-                Matches played: {allMatches.length}
+                Matches played: {player.matches.length}
               </p>
               <p className="text-gray-600 dark:text-gray-300">
                 Total to pay: ${totalToPay.toFixed(2)}
               </p>
               <Link
                 href={`/players/${player.id}`}
-                className="text-blue-500 dark:text-blue-400 mt-2 inline-block"
+                className="text-blue-500 dark:text-blue-500 mt-2 inline-block"
               >
                 Edit Player
               </Link>

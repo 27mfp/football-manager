@@ -2,10 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import TeamSelector from "@/components/TeamSelector";
 
 interface Player {
   id: number;
   name: string;
+  elo: number;
+}
+
+interface PlayerMatch {
+  id: number;
+  player: Player;
+  team: string;
+  paid: boolean;
 }
 
 interface Match {
@@ -15,21 +24,23 @@ interface Match {
   price: number;
   location: string;
   result: string | null;
-  teamA: Player[];
-  teamB: Player[];
+  players: PlayerMatch[];
 }
 
 export default function EditMatch({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [match, setMatch] = useState<Match | null>(null);
-  const [players, setPlayers] = useState<Player[]>([]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
   const [result, setResult] = useState("");
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [teamA, setTeamA] = useState<number[]>([]);
   const [teamB, setTeamB] = useState<number[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   useEffect(() => {
     fetchMatch();
@@ -45,21 +56,43 @@ export default function EditMatch({ params }: { params: { id: string } }) {
     setPrice(data.price.toString());
     setLocation(data.location);
     setResult(data.result || "");
-    setTeamA(data.teamA.map((p: Player) => p.id));
-    setTeamB(data.teamB.map((p: Player) => p.id));
+    setTeamA(
+      data.players
+        .filter((pm: PlayerMatch) => pm.team === "A")
+        .map((pm: PlayerMatch) => pm.player.id)
+    );
+    setTeamB(
+      data.players
+        .filter((pm: PlayerMatch) => pm.team === "B")
+        .map((pm: PlayerMatch) => pm.player.id)
+    );
+
+    // Set payment status
+    const status: { [key: number]: boolean } = {};
+    data.players.forEach((pm: PlayerMatch) => {
+      status[pm.player.id] = pm.paid;
+    });
+    setPaymentStatus(status);
   };
 
   const fetchPlayers = async () => {
     const res = await fetch("/api/players");
     const data = await res.json();
-    setPlayers(data);
+    setAllPlayers(data);
+  };
+
+  const handleTeamsChange = (newTeamA: number[], newTeamB: number[]) => {
+    setTeamA(newTeamA);
+    setTeamB(newTeamB);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await fetch(`/api/matches/${params.id}`, {
+    const response = await fetch(`/api/matches/${params.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         date,
         time,
@@ -68,9 +101,11 @@ export default function EditMatch({ params }: { params: { id: string } }) {
         result,
         teamA,
         teamB,
+        paymentStatus,
       }),
     });
-    if (res.ok) {
+
+    if (response.ok) {
       router.push("/matches");
       router.refresh();
     }
@@ -79,126 +114,86 @@ export default function EditMatch({ params }: { params: { id: string } }) {
   if (!match) return <div>Loading...</div>;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-3xl font-bold mb-4">Edit Match</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label htmlFor="date" className="block mb-2">
-            Date:
-          </label>
-          <input
-            type="date"
-            id="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="time" className="block mb-2">
-            Time:
-          </label>
-          <input
-            type="time"
-            id="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="price" className="block mb-2">
-            Price:
-          </label>
-          <input
-            type="number"
-            id="price"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-            step="0.01"
-          />
-        </div>
-        <div>
-          <label htmlFor="location" className="block mb-2">
-            Location:
-          </label>
-          <input
-            type="text"
-            id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="result" className="block mb-2">
-            Result:
-          </label>
-          <input
-            type="text"
-            id="result"
-            value={result}
-            onChange={(e) => setResult(e.target.value)}
-            className="w-full p-2 border rounded"
-            placeholder="e.g. 3-2"
-          />
-        </div>
-        <div>
-          <label className="block mb-2">Team A (select 5 players):</label>
-          <select
-            multiple
-            value={teamA.map(String)}
-            onChange={(e) =>
-              setTeamA(
-                Array.from(e.target.selectedOptions, (option) =>
-                  Number(option.value)
-                )
-              )
-            }
-            className="w-full p-2 border rounded"
-            size={5}
-          >
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block mb-2">Team B (select 5 players):</label>
-          <select
-            multiple
-            value={teamB.map(String)}
-            onChange={(e) =>
-              setTeamB(
-                Array.from(e.target.selectedOptions, (option) =>
-                  Number(option.value)
-                )
-              )
-            }
-            className="w-full p-2 border rounded"
-            size={5}
-          >
-            {players.map((player) => (
-              <option key={player.id} value={player.id}>
-                {player.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded"
-        >
-          Update Match
-        </button>
-      </form>
-    </div>
+      <div>
+        <label htmlFor="date" className="block mb-2">
+          Date:
+        </label>
+        <input
+          type="date"
+          id="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <div>
+        <label htmlFor="time" className="block mb-2">
+          Time:
+        </label>
+        <input
+          type="time"
+          id="time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
+          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <div>
+        <label htmlFor="price" className="block mb-2">
+          Price:
+        </label>
+        <input
+          type="number"
+          id="price"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          required
+          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <div>
+        <label htmlFor="location" className="block mb-2">
+          Location:
+        </label>
+        <input
+          type="text"
+          id="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          required
+          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <div>
+        <label htmlFor="result" className="block mb-2">
+          Result:
+        </label>
+        <input
+          type="text"
+          id="result"
+          value={result}
+          onChange={(e) => setResult(e.target.value)}
+          placeholder="e.g. 3-2"
+          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+        />
+      </div>
+      <TeamSelector
+        players={allPlayers}
+        teamA={teamA}
+        teamB={teamB}
+        onTeamsChange={handleTeamsChange}
+        paymentStatus={paymentStatus}
+      />
+      <button
+        type="submit"
+        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+      >
+        Update Match
+      </button>
+    </form>
   );
 }
