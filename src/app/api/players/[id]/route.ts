@@ -57,20 +57,29 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const body = await request.json();
-  const { name, elo, matches, wins } = body;
+  try {
+    const body = await request.json();
+    const { name, elo, matches, wins } = body;
 
-  const updatedPlayer = await prisma.player.update({
-    where: { id: Number(params.id) },
-    data: {
-      name,
-      elo,
-      matches,
-      wins,
-    },
-  });
+    const updatedPlayer = await prisma.player.update({
+      where: { id: Number(params.id) },
+      data: {
+        name,
+        elo,
+        matches,
+        wins,
+      },
+    });
 
-  return NextResponse.json(updatedPlayer);
+    console.log("Player updated:", updatedPlayer);
+    return NextResponse.json(updatedPlayer);
+  } catch (error) {
+    console.error("Error updating player:", error);
+    return NextResponse.json(
+      { error: "Failed to update player" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function DELETE(
