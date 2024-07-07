@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface PlayerMatch {
@@ -27,16 +27,16 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
   const [match, setMatch] = useState<Match | null>(null);
   const [playerMatches, setPlayerMatches] = useState<PlayerMatch[]>([]);
 
-  const fetchMatch = useCallback(async () => {
+  useEffect(() => {
+    fetchMatch();
+  }, []);
+
+  const fetchMatch = async () => {
     const res = await fetch(`/api/matches/${params.id}`);
     const data = await res.json();
     setMatch(data);
     setPlayerMatches(data.players);
-  }, [params.id]);
-
-  useEffect(() => {
-    fetchMatch();
-  }, [fetchMatch]);
+  };
 
   const handlePaymentToggle = (playerMatchId: number) => {
     setPlayerMatches(
@@ -74,7 +74,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
         {playerMatches.map((pm) => (
           <div
             key={pm.id}
-            className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded shadow"
+            className="flex items-center justify-between p-2 bg-[var(--card-bg)] rounded"
           >
             <span>
               {pm.player.name} (Team {pm.team})
@@ -83,8 +83,8 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
               onClick={() => handlePaymentToggle(pm.id)}
               className={`px-4 py-2 rounded ${
                 pm.paid
-                  ? "bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800"
-                  : "bg-red-500 hover:bg-red-600 dark:bg-red-700 dark:hover:bg-red-800"
+                  ? "bg-green-500 hover:bg-green-600"
+                  : "bg-red-500 hover:bg-red-600"
               } text-white`}
             >
               {pm.paid ? "Paid" : "Unpaid"}
@@ -94,7 +94,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
       </div>
       <button
         onClick={handleSubmit}
-        className="mt-4 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-4 py-2 rounded"
+        className="bg-[var(--primary)] text-white mt-4 px-4 py-2 rounded"
       >
         Save Payments
       </button>

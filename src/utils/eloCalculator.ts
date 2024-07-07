@@ -1,4 +1,4 @@
-const K_FACTOR = 32;
+const K_FACTOR = 50;
 
 export function calculateEloChange(
   playerElo: number,

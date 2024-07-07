@@ -1,3 +1,5 @@
+// src/components/TeamSelector.tsx
+
 import React, { useState } from "react";
 
 interface Player {
@@ -46,43 +48,42 @@ export default function TeamSelector({
     }
   };
 
-  const generateBalancedTeams = () => {
-    const sortedPlayers = [...players].sort((a, b) => b.elo - a.elo);
-    const newTeamA: number[] = [];
-    const newTeamB: number[] = [];
-    let sumA = 0;
-    let sumB = 0;
-
-    sortedPlayers.forEach((player) => {
-      if (sumA <= sumB) {
-        newTeamA.push(player.id);
-        sumA += player.elo;
-      } else {
-        newTeamB.push(player.id);
-        sumB += player.elo;
-      }
-    });
-
+  const handleRemoveFromTeam = (playerId: number) => {
+    const newTeamA = teamA.filter((id) => id !== playerId);
+    const newTeamB = teamB.filter((id) => id !== playerId);
     onTeamsChange(newTeamA, newTeamB);
   };
 
-  const renderPlayer = (player: Player) => (
+  const renderPlayer = (player: Player, team: "A" | "B" | null) => (
     <li
       key={player.id}
-      className={`cursor-pointer p-1 rounded ${
-        selectedPlayer === player.id ? "bg-blue-200" : ""
+      className={`cursor-pointer p-1 rounded flex justify-between items-center ${
+        selectedPlayer === player.id ? "bg-[var(--primary)] text-white" : ""
       }`}
       onClick={() => handlePlayerSelect(player.id)}
     >
-      {player.name} (Elo: {player.elo.toFixed(0)})
-      {paymentStatus[player.id] !== undefined && (
-        <span
-          className={`ml-2 ${
-            paymentStatus[player.id] ? "text-green-500" : "text-red-500"
-          }`}
+      <span>
+        {player.name} (Elo: {player.elo.toFixed(0)})
+        {paymentStatus[player.id] !== undefined && (
+          <span
+            className={`ml-2 ${
+              paymentStatus[player.id] ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {paymentStatus[player.id] ? "Paid" : "Unpaid"}
+          </span>
+        )}
+      </span>
+      {team && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleRemoveFromTeam(player.id);
+          }}
+          className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded text-xs"
         >
-          {paymentStatus[player.id] ? "Paid" : "Unpaid"}
-        </span>
+          Remove
+        </button>
       )}
     </li>
   );
@@ -92,45 +93,41 @@ export default function TeamSelector({
       <div className="flex space-x-4">
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Unassigned Players</h3>
-          <ul className="bg-gray-100 p-2 rounded">
-            {unassignedPlayers.map(renderPlayer)}
+          <ul className="bg-[var(--card-bg)] p-2 rounded">
+            {unassignedPlayers.map((player) => renderPlayer(player, null))}
           </ul>
         </div>
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Team A</h3>
-          <ul className="bg-gray-100 p-2 rounded">
-            {players.filter((p) => teamA.includes(p.id)).map(renderPlayer)}
+          <ul className="bg-[var(--card-bg)] p-2 rounded">
+            {players
+              .filter((p) => teamA.includes(p.id))
+              .map((player) => renderPlayer(player, "A"))}
           </ul>
         </div>
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Team B</h3>
-          <ul className="bg-gray-100 p-2 rounded">
-            {players.filter((p) => teamB.includes(p.id)).map(renderPlayer)}
+          <ul className="bg-[var(--card-bg)] p-2 rounded">
+            {players
+              .filter((p) => teamB.includes(p.id))
+              .map((player) => renderPlayer(player, "B"))}
           </ul>
         </div>
       </div>
       <div className="flex justify-center space-x-4">
         <button
           onClick={() => handleTeamAssign("A")}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-[var(--primary)] text-white px-4 py-2 rounded"
           disabled={!selectedPlayer}
         >
           Assign to Team A
         </button>
         <button
           onClick={() => handleTeamAssign("B")}
-          className="bg-green-500 text-white px-4 py-2 rounded"
+          className="bg-[var(--primary)] text-white px-4 py-2 rounded"
           disabled={!selectedPlayer}
         >
           Assign to Team B
-        </button>
-      </div>
-      <div className="flex justify-center">
-        <button
-          onClick={generateBalancedTeams}
-          className="bg-purple-500 text-white px-4 py-2 rounded"
-        >
-          Generate Balanced Teams
         </button>
       </div>
     </div>

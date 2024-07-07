@@ -32,7 +32,8 @@ export default function TeamGenerator() {
     );
   };
 
-  const generateTeams = () => {
+  const generateTeams = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     const selected = players.filter((player) =>
       selectedPlayers.includes(player.id)
     );
@@ -57,6 +58,12 @@ export default function TeamGenerator() {
     setTeamB(teamB);
   };
 
+  const calculateAverageElo = (team: Player[]) => {
+    if (team.length === 0) return 0;
+    const totalElo = team.reduce((sum, player) => sum + player.elo, 0);
+    return totalElo / team.length;
+  };
+
   return (
     <div className="max-w-2xl mx-auto">
       <h2 className="text-3xl font-bold mb-4">Team Generator</h2>
@@ -69,8 +76,8 @@ export default function TeamGenerator() {
               onClick={() => handlePlayerToggle(player.id)}
               className={`p-2 rounded ${
                 selectedPlayers.includes(player.id)
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                  ? "bg-[var(--primary)] text-white"
+                  : "bg-[var(--secondary)] text-[var(--text)]"
               }`}
             >
               {player.name} (Elo: {player.elo})
@@ -80,7 +87,7 @@ export default function TeamGenerator() {
       </div>
       <button
         onClick={generateTeams}
-        className="mb-4 bg-green-500 hover:bg-green-600 dark:bg-green-700 dark:hover:bg-green-800 text-white px-4 py-2 rounded"
+        className="bg-[var(--primary)] text-white mb-4 px-4 py-2 rounded"
       >
         Generate Teams
       </button>
@@ -88,7 +95,7 @@ export default function TeamGenerator() {
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <h3 className="text-xl font-bold mb-2">Team A</h3>
-            <ul className="bg-white dark:bg-gray-800 rounded shadow p-2">
+            <ul className="bg-[var(--card-bg)] rounded p-2">
               {teamA.map((player) => (
                 <li key={player.id}>
                   {player.name} (Elo: {player.elo})
@@ -96,12 +103,12 @@ export default function TeamGenerator() {
               ))}
             </ul>
             <p className="mt-2">
-              Total Elo: {teamA.reduce((sum, player) => sum + player.elo, 0)}
+              Average Elo: {calculateAverageElo(teamA).toFixed(2)}
             </p>
           </div>
           <div>
             <h3 className="text-xl font-bold mb-2">Team B</h3>
-            <ul className="bg-white dark:bg-gray-800 rounded shadow p-2">
+            <ul className="bg-[var(--card-bg)] rounded p-2">
               {teamB.map((player) => (
                 <li key={player.id}>
                   {player.name} (Elo: {player.elo})
@@ -109,7 +116,7 @@ export default function TeamGenerator() {
               ))}
             </ul>
             <p className="mt-2">
-              Total Elo: {teamB.reduce((sum, player) => sum + player.elo, 0)}
+              Average Elo: {calculateAverageElo(teamB).toFixed(2)}
             </p>
           </div>
         </div>

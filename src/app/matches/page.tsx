@@ -1,35 +1,79 @@
+"use client";
+
 import Link from "next/link";
-import { PrismaClient } from "@prisma/client";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-const prisma = new PrismaClient();
-
-async function getMatches() {
-  return await prisma.match.findMany({
-    include: {
-      players: {
-        include: {
-          player: true,
-        },
-      },
-    },
-    orderBy: {
-      date: "desc",
-    },
-  });
+interface Player {
+  id: number;
+  name: string;
 }
 
-export default async function Matches() {
-  const matches = await getMatches();
+interface PlayerMatch {
+  id: number;
+  player: Player;
+  team: string;
+  paid: boolean;
+}
 
-  return (
+interface Match {
+  id: number;
+  date: string;
+  time: string;
+  price: number;
+  location: string;
+  result: string | null;
+  players: PlayerMatch[];
+}
+
+export default function Matches() {
+  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
+  const [previousMatches, setPreviousMatches] = useState<Match[]>([]);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchMatches();
+  }, []);
+
+  const fetchMatches = async () => {
+    const res = await fetch("/api/matches");
+    const data = await res.json();
+    const now = new Date();
+    setUpcomingMatches(
+      data
+        .filter((match: Match) => new Date(match.date) > now)
+        .sort(
+          (a: Match, b: Match) =>
+            new Date(a.date).getTime() - new Date(b.date).getTime()
+        )
+    );
+    setPreviousMatches(
+      data
+        .filter((match: Match) => new Date(match.date) <= now)
+        .sort(
+          (a: Match, b: Match) =>
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+    );
+  };
+
+  const handleDelete = async (id: number) => {
+    if (window.confirm("Are you sure you want to delete this match?")) {
+      const res = await fetch(`/api/matches/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        fetchMatches();
+        router.refresh();
+      } else {
+        alert("Failed to delete match");
+      }
+    }
+  };
+
+  const renderMatchList = (matches: Match[], title: string) => (
     <div>
-      <h2 className="text-3xl font-bold mb-4">Matches</h2>
-      <Link
-        href="/matches/create"
-        className="bg-green-500 dark:bg-green-700 text-white px-4 py-2 rounded inline-block mb-4"
-      >
-        Create New Match
-      </Link>
+      <h3 className="text-2xl font-bold mb-4">{title}</h3>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {matches.map((match) => {
           const totalPlayers = match.players.length;
@@ -41,7 +85,7 @@ export default async function Matches() {
           return (
             <div
               key={match.id}
-              className="bg-white dark:bg-gray-800 p-4 rounded shadow"
+              className="bg-[var(--card-bg)] p-4 rounded shadow"
             >
               <p className="font-bold">
                 {new Date(match.date).toLocaleDateString()} at {match.time}
@@ -80,22 +124,44 @@ export default async function Matches() {
                   ))}
                 </ul>
               </div>
-              <Link
-                href={`/matches/${match.id}/edit`}
-                className="text-blue-500 dark:text-blue-400 mt-2 inline-block mr-2"
-              >
-                Edit Match
-              </Link>
-              <Link
-                href={`/matches/${match.id}/payments`}
-                className="text-blue-500 dark:text-blue-400 mt-2 inline-block"
-              >
-                Manage Payments
-              </Link>
+              <div className="mt-4 space-x-2">
+                <Link
+                  href={`/matches/${match.id}/edit`}
+                  className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded"
+                >
+                  Edit Match
+                </Link>
+                <Link
+                  href={`/matches/${match.id}/payments`}
+                  className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded"
+                >
+                  Manage Payments
+                </Link>
+                <button
+                  onClick={() => handleDelete(match.id)}
+                  className="text-red-500 px-2 py-1 rounded"
+                >
+                  Delete Match
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <h2 className="text-3xl font-bold mb-4">Matches</h2>
+      <Link
+        href="/matches/create"
+        className="bg-[var(--primary)] text-white px-4 py-2 rounded inline-block mb-4"
+      >
+        Create New Match
+      </Link>
+      {renderMatchList(upcomingMatches, "Upcoming Matches")}
+      {renderMatchList(previousMatches, "Previous Matches")}
     </div>
   );
 }

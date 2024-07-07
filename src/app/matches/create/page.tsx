@@ -19,9 +19,6 @@ export default function CreateMatch() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamA, setTeamA] = useState<number[]>([]);
   const [teamB, setTeamB] = useState<number[]>([]);
-  const [paymentStatus, setPaymentStatus] = useState<{
-    [key: number]: boolean;
-  }>({});
 
   useEffect(() => {
     fetchPlayers();
@@ -74,7 +71,7 @@ export default function CreateMatch() {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <div>
@@ -87,7 +84,7 @@ export default function CreateMatch() {
           value={time}
           onChange={(e) => setTime(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <div>
@@ -100,7 +97,7 @@ export default function CreateMatch() {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <div>
@@ -113,7 +110,7 @@ export default function CreateMatch() {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <TeamSelector
@@ -121,11 +118,10 @@ export default function CreateMatch() {
         teamA={teamA}
         teamB={teamB}
         onTeamsChange={handleTeamsChange}
-        paymentStatus={paymentStatus}
       />
       <button
         type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+        className="bg-[var(--primary)] text-white px-4 py-2 rounded"
       >
         Create Match
       </button>

@@ -1,27 +1,51 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function GET() {
-  const players = await prisma.player.findMany({
-    orderBy: {
-      elo: "desc",
-    },
-  });
-  return NextResponse.json(players);
-}
+  try {
+    const players = await prisma.player.findMany({
+      include: {
+        playerMatches: {
+          include: {
+            match: {
+              include: {
+                players: true,
+              },
+            },
+          },
+        },
+      },
+    });
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { name, elo = 1500 } = body;
+    const playersWithDetails = players.map((player) => {
+      const matchesPlayed = player.playerMatches.length;
+      const amountToPay = player.playerMatches.reduce((total, pm) => {
+        if (!pm.paid) {
+          const match = pm.match;
+          const playersInMatch = match.players.length;
+          const pricePerPlayer = match.price / playersInMatch;
+          return total + pricePerPlayer;
+        }
+        return total;
+      }, 0);
 
-  const player = await prisma.player.create({
-    data: {
-      name,
-      elo,
-    },
-  });
+      return {
+        id: player.id,
+        name: player.name,
+        elo: player.elo,
+        matches: player.matches || 0,
+        wins: player.wins || 0,
+        matchesPlayed,
+        amountToPay: Number(amountToPay.toFixed(2)),
+      };
+    });
 
-  return NextResponse.json(player);
+    return NextResponse.json(playersWithDetails);
+  } catch (error) {
+    console.error("Error fetching players:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch players" },
+      { status: 500 }
+    );
+  }
 }

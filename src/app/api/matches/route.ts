@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
+import { gameOver } from "@/utils/eloCalculation";
 
 export async function GET() {
   const matches = await prisma.match.findMany({
@@ -11,9 +10,6 @@ export async function GET() {
           player: true,
         },
       },
-    },
-    orderBy: {
-      date: "desc",
     },
   });
   return NextResponse.json(matches);

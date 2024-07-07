@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CreatePlayer() {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [elo, setElo] = useState("1500"); // Default Elo rating
+  const [elo, setElo] = useState("1500");
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const response = await fetch("/api/players", {
       method: "POST",
@@ -37,7 +37,7 @@ export default function CreatePlayer() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <div>
@@ -50,12 +50,12 @@ export default function CreatePlayer() {
           value={elo}
           onChange={(e) => setElo(e.target.value)}
           required
-          className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
         />
       </div>
       <button
         type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+        className="bg-[var(--primary)] text-white px-4 py-2 rounded"
       >
         Create Player
       </button>

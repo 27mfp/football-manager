@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useTheme } from "@/hooks/useTheme";
+import { theme } from "@/styles/theme";
 import TeamSelector from "@/components/TeamSelector";
 
 interface Player {
@@ -41,6 +43,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
   const [paymentStatus, setPaymentStatus] = useState<{
     [key: number]: boolean;
   }>({});
+  const currentTheme = useTheme();
 
   useEffect(() => {
     fetchMatch();
@@ -138,7 +141,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={time}
           onChange={(e) => setTime(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded"
         />
       </div>
       <div>
@@ -151,7 +154,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded"
         />
       </div>
       <div>
@@ -164,7 +167,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded"
         />
       </div>
       <div>
@@ -176,7 +179,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           id="result"
           value={result}
           onChange={(e) => setResult(e.target.value)}
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded"
           placeholder="e.g. 3-2"
         />
       </div>
@@ -187,10 +190,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
         onTeamsChange={handleTeamsChange}
         paymentStatus={paymentStatus}
       />
-      <button
-        type="submit"
-        className="bg-[var(--primary)] text-white px-4 py-2 rounded"
-      >
+      <button type="submit" className="px-4 py-2 rounded">
         Update Match
       </button>
     </form>
