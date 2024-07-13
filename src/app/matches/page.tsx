@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 interface Player {
@@ -9,26 +9,29 @@ interface Player {
   name: string;
 }
 
-interface PlayerMatch {
-  id: number;
+interface PlayerMatchResult {
   player: Player;
   team: string;
   paid: boolean;
+  eloBefore: number;
+  eloAfter: number;
 }
 
 interface Match {
   id: number;
   date: string;
   time: string;
-  price: number;
   location: string;
   result: string | null;
-  players: PlayerMatch[];
+  price: number;
+  pricePerPlayer: number;
+  totalPaid: number;
+  totalToPay: number;
+  players: PlayerMatchResult[];
 }
 
-export default function Matches() {
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [previousMatches, setPreviousMatches] = useState<Match[]>([]);
+export default function MatchesPage() {
+  const [matches, setMatches] = useState<Match[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,132 +39,183 @@ export default function Matches() {
   }, []);
 
   const fetchMatches = async () => {
-    const res = await fetch("/api/matches");
-    const data = await res.json();
-    const now = new Date();
-    setUpcomingMatches(
-      data
-        .filter((match: Match) => new Date(match.date) > now)
-        .sort(
-          (a: Match, b: Match) =>
-            new Date(a.date).getTime() - new Date(b.date).getTime()
-        )
-    );
-    setPreviousMatches(
-      data
-        .filter((match: Match) => new Date(match.date) <= now)
-        .sort(
-          (a: Match, b: Match) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-        )
-    );
+    try {
+      const res = await fetch("/api/matches");
+      if (!res.ok) throw new Error("Failed to fetch matches");
+      const data = await res.json();
+      setMatches(data);
+    } catch (error) {
+      console.error("Error fetching matches:", error);
+    }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm("Are you sure you want to delete this match?")) {
-      const res = await fetch(`/api/matches/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        fetchMatches();
-        router.refresh();
-      } else {
-        alert("Failed to delete match");
+  const deleteMatch = async (id: number) => {
+    if (
+      confirm(
+        "Are you sure you want to delete this match? This will revert ELO changes for all players involved."
+      )
+    ) {
+      try {
+        const res = await fetch(`/api/matches/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Failed to delete match");
+        fetchMatches(); // Refresh the matches list
+      } catch (error) {
+        console.error("Error deleting match:", error);
       }
     }
   };
 
-  const renderMatchList = (matches: Match[], title: string) => (
-    <div>
-      <h3 className="text-2xl font-bold mb-4">{title}</h3>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {matches.map((match) => {
-          const totalPlayers = match.players.length;
-          const pricePerPlayer =
-            totalPlayers > 0 ? match.price / totalPlayers : 0;
-          const teamA = match.players.filter((pm) => pm.team === "A");
-          const teamB = match.players.filter((pm) => pm.team === "B");
-
-          return (
-            <div
-              key={match.id}
-              className="bg-[var(--card-bg)] p-4 rounded shadow"
-            >
-              <p className="font-bold">
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-zinc-800 dark:text-white">
+          Matches
+        </h1>
+        <Link
+          href="/matches/create"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300"
+        >
+          Create New Match
+        </Link>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {matches.map((match) => (
+          <div
+            key={match.id}
+            className="bg-white dark:bg-zinc-800 shadow-md rounded-lg overflow-hidden flex flex-col h-full"
+          >
+            <div className="p-4 flex-grow">
+              <p className="text-lg font-semibold text-zinc-800 dark:text-white">
                 {new Date(match.date).toLocaleDateString()} at {match.time}
               </p>
-              <p>Location: {match.location}</p>
-              <p>Total Price: ${match.price.toFixed(2)}</p>
-              <p>Price per Player: ${pricePerPlayer.toFixed(2)}</p>
-              <p>Result: {match.result || "Not played yet"}</p>
-              <div className="mt-2">
-                <p className="font-semibold">Team A:</p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                {match.location}
+              </p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Result: {match.result || "Not played yet"}
+              </p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Total Price: ${match.price.toFixed(2)}
+              </p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Price per player: ${match.pricePerPlayer.toFixed(2)}
+              </p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Total Paid: ${match.totalPaid.toFixed(2)}
+              </p>
+              <p className="text-zinc-600 dark:text-zinc-300">
+                Total to Pay: ${match.totalToPay.toFixed(2)}
+              </p>
+              <div className="mt-4">
+                <p className="font-semibold text-zinc-700 dark:text-zinc-200">
+                  Team A:
+                </p>
                 <ul className="list-disc list-inside">
-                  {teamA.map((pm) => (
-                    <li key={pm.id}>
-                      {pm.player.name}
-                      <span
-                        className={pm.paid ? "text-green-500" : "text-red-500"}
+                  {match.players
+                    .filter((p) => p.team === "A")
+                    .map((p, index) => (
+                      <li
+                        key={index}
+                        className="text-zinc-600 dark:text-zinc-300"
                       >
-                        {pm.paid ? " (Paid)" : " (Unpaid)"}
-                      </span>
-                    </li>
-                  ))}
+                        {p.player.name}
+                        <span
+                          className={
+                            p.paid ? "text-green-500 ml-2" : "text-red-500 ml-2"
+                          }
+                        >
+                          {p.paid ? "(Paid)" : "(Unpaid)"}
+                        </span>
+                        {match.result && (
+                          <span className="ml-2">
+                            ELO: {Math.round(p.eloBefore)} →{" "}
+                            <span
+                              className={
+                                (p.eloAfter ?? 0) > (p.eloBefore ?? 0)
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }
+                            >
+                              {Math.round(p.eloAfter)} (
+                              {p.eloBefore !== undefined &&
+                              p.eloAfter !== undefined
+                                ? (p.eloAfter > p.eloBefore ? "+" : "-") +
+                                  Math.abs(Math.round(p.eloAfter - p.eloBefore))
+                                : "N/A"}
+                              )
+                            </span>
+                          </span>
+                        )}
+                      </li>
+                    ))}
                 </ul>
               </div>
               <div className="mt-2">
-                <p className="font-semibold">Team B:</p>
+                <p className="font-semibold text-zinc-700 dark:text-zinc-200">
+                  Team B:
+                </p>
                 <ul className="list-disc list-inside">
-                  {teamB.map((pm) => (
-                    <li key={pm.id}>
-                      {pm.player.name}
-                      <span
-                        className={pm.paid ? "text-green-500" : "text-red-500"}
+                  {match.players
+                    .filter((p) => p.team === "B")
+                    .map((p, index) => (
+                      <li
+                        key={index}
+                        className="text-zinc-600 dark:text-zinc-300"
                       >
-                        {pm.paid ? " (Paid)" : " (Unpaid)"}
-                      </span>
-                    </li>
-                  ))}
+                        {p.player.name}
+                        <span
+                          className={
+                            p.paid ? "text-green-500 ml-2" : "text-red-500 ml-2"
+                          }
+                        >
+                          {p.paid ? "(Paid)" : "(Unpaid)"}
+                        </span>
+                        {match.result && (
+                          <span className="ml-2">
+                            ELO: {p.eloBefore} →{" "}
+                            <span
+                              className={
+                                p.eloAfter > p.eloBefore
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }
+                            >
+                              {p.eloAfter} (
+                              {p.eloAfter - p.eloBefore > 0 ? "+" : ""}
+                              {p.eloAfter - p.eloBefore})
+                            </span>
+                          </span>
+                        )}
+                      </li>
+                    ))}
                 </ul>
-              </div>
-              <div className="mt-4 space-x-2">
-                <Link
-                  href={`/matches/${match.id}/edit`}
-                  className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded"
-                >
-                  Edit Match
-                </Link>
-                <Link
-                  href={`/matches/${match.id}/payments`}
-                  className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded"
-                >
-                  Manage Payments
-                </Link>
-                <button
-                  onClick={() => handleDelete(match.id)}
-                  className="text-red-500 px-2 py-1 rounded"
-                >
-                  Delete Match
-                </button>
               </div>
             </div>
-          );
-        })}
+            <div className="bg-zinc-50 dark:bg-zinc-700 px-4 py-3 text-right mt-auto">
+              <Link
+                href={`/matches/${match.id}/edit`}
+                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-4"
+              >
+                Edit
+              </Link>
+              <Link
+                href={`/matches/${match.id}/payments`}
+                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 mr-4"
+              >
+                Manage Payments
+              </Link>
+              <button
+                onClick={() => deleteMatch(match.id)}
+                className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
-    </div>
-  );
-
-  return (
-    <div>
-      <h2 className="text-3xl font-bold mb-4">Matches</h2>
-      <Link
-        href="/matches/create"
-        className="bg-[var(--primary)] text-white px-4 py-2 rounded inline-block mb-4"
-      >
-        Create New Match
-      </Link>
-      {renderMatchList(upcomingMatches, "Upcoming Matches")}
-      {renderMatchList(previousMatches, "Previous Matches")}
     </div>
   );
 }

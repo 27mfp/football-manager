@@ -31,7 +31,7 @@ export default async function MatchDetail({
   return (
     <div className="max-w-2xl mx-auto">
       <h2 className="text-3xl font-bold mb-4">Match Details</h2>
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+      <div className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md">
         <p>
           <strong>Date:</strong> {new Date(match.date).toLocaleDateString()}
         </p>

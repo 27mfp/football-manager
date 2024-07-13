@@ -64,7 +64,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
   const pricePerPlayer = match.price / playerMatches.length;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto min-h-screen m-5">
       <h2 className="text-3xl font-bold mb-4">Match Payments</h2>
       <p className="mb-4">
         Match Date: {new Date(match.date).toLocaleDateString()} at {match.time}
@@ -74,7 +74,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
         {playerMatches.map((pm) => (
           <div
             key={pm.id}
-            className="flex items-center justify-between p-2 bg-[var(--card-bg)] rounded"
+            className="flex items-center justify-between p-2 bg-zinc-100 rounded dark:bg-zinc-700"
           >
             <span>
               {pm.player.name} (Team {pm.team})
@@ -94,7 +94,7 @@ export default function MatchPayments({ params }: { params: { id: string } }) {
       </div>
       <button
         onClick={handleSubmit}
-        className="bg-[var(--primary)] text-white mt-4 px-4 py-2 rounded"
+        className="bg-blue-500 hover:bg-blue-600 text-white mt-4 px-4 py-2 rounded"
       >
         Save Payments
       </button>

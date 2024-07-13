@@ -65,7 +65,7 @@ export default function TeamGenerator() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="container mx-auto mt-8 px-4">
       <h2 className="text-3xl font-bold mb-4">Team Generator</h2>
       <div className="mb-4">
         <h3 className="text-xl font-bold mb-2">Select Players</h3>
@@ -76,8 +76,8 @@ export default function TeamGenerator() {
               onClick={() => handlePlayerToggle(player.id)}
               className={`p-2 rounded ${
                 selectedPlayers.includes(player.id)
-                  ? "bg-[var(--primary)] text-white"
-                  : "bg-[var(--secondary)] text-[var(--text)]"
+                  ? "bg-zinc-300 text-black dark:bg-zinc-600 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  : "bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white hover:bg-zinc-200 dark:hover:bg-zinc-700"
               }`}
             >
               {player.name} (Elo: {player.elo})
@@ -87,7 +87,7 @@ export default function TeamGenerator() {
       </div>
       <button
         onClick={generateTeams}
-        className="bg-[var(--primary)] text-white mb-4 px-4 py-2 rounded"
+        className="bg-blue-500 text-white hover:bg-blue-600 dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 mb-4 px-4 py-2 rounded"
       >
         Generate Teams
       </button>
@@ -95,27 +95,27 @@ export default function TeamGenerator() {
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <h3 className="text-xl font-bold mb-2">Team A</h3>
-            <ul className="bg-[var(--card-bg)] rounded p-2">
+            <ul className="bg-zinc-200 dark:bg-zinc-800 rounded p-2">
               {teamA.map((player) => (
                 <li key={player.id}>
                   {player.name} (Elo: {player.elo})
                 </li>
               ))}
             </ul>
-            <p className="mt-2">
+            <p className="mt-2 text-center">
               Average Elo: {calculateAverageElo(teamA).toFixed(2)}
             </p>
           </div>
           <div>
             <h3 className="text-xl font-bold mb-2">Team B</h3>
-            <ul className="bg-[var(--card-bg)] rounded p-2">
+            <ul className="bg-zinc-200 dark:bg-zinc-800 rounded p-2">
               {teamB.map((player) => (
                 <li key={player.id}>
                   {player.name} (Elo: {player.elo})
                 </li>
               ))}
             </ul>
-            <p className="mt-2">
+            <p className="mt-2 text-center">
               Average Elo: {calculateAverageElo(teamB).toFixed(2)}
             </p>
           </div>

@@ -1,16 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gameOver } from "@/utils/eloCalculation";
-
-// Elo calculation function
-function calculateEloChange(
-  playerElo: number,
-  opponentElo: number,
-  score: number
-): number {
-  const expectedScore = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
-  return Math.round(32 * (score - expectedScore));
-}
+import eloSystem from "@/lib/eloSystem";
 
 export async function GET(
   request: Request,
@@ -26,11 +16,9 @@ export async function GET(
       },
     },
   });
-
   if (!match) {
     return NextResponse.json({ error: "Match not found" }, { status: 404 });
   }
-
   return NextResponse.json(match);
 }
 
@@ -39,98 +27,131 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   const body = await request.json();
-  const { date, time, price, location, result, teamA, teamB, paymentStatus } =
-    body;
+  const {
+    date,
+    time,
+    price,
+    location,
+    result,
+    teamA,
+    teamB,
+    paymentStatus,
+    scoreA,
+    scoreB,
+  } = body;
 
   try {
-    // Fetch the current match to check if the result has changed
     const currentMatch = await prisma.match.findUnique({
       where: { id: Number(params.id) },
-      include: {
-        players: {
-          include: {
-            player: true,
-          },
-        },
-      },
+      include: { players: { include: { player: true } } },
     });
 
-    const updatedMatch = await prisma.match.update({
-      where: { id: Number(params.id) },
-      data: {
-        date: new Date(date),
-        time,
-        price,
-        location,
-        result,
-        players: {
-          deleteMany: {},
-          create: [
-            ...teamA.map((playerId: number) => ({
-              playerId,
-              team: "A",
-              paid: paymentStatus[playerId] || false,
-            })),
-            ...teamB.map((playerId: number) => ({
-              playerId,
-              team: "B",
-              paid: paymentStatus[playerId] || false,
-            })),
-          ],
-        },
-      },
-      include: {
-        players: {
-          include: {
-            player: true,
-          },
-        },
-      },
-    });
-
-    // If the result has changed and is not null, update Elo ratings
     if (result && result !== currentMatch?.result) {
-      const [scoreA, scoreB] = result.split("-").map(Number);
-      const teamAPlayers = updatedMatch.players
-        .filter((pm) => pm.team === "A")
-        .map((pm) => ({
-          id: pm.player.id,
-          name: pm.player.name,
-          elo: pm.player.elo,
-          matches: pm.player.matches,
-          wins: pm.player.wins,
-        }));
-      const teamBPlayers = updatedMatch.players
-        .filter((pm) => pm.team === "B")
-        .map((pm) => ({
-          id: pm.player.id,
-          name: pm.player.name,
-          elo: pm.player.elo,
-          matches: pm.player.matches,
-          wins: pm.player.wins,
-        }));
+      const allPlayers = await prisma.player.findMany({
+        where: { id: { in: [...teamA, ...teamB] } },
+      });
 
-      const [updatedTeamA, updatedTeamB] = gameOver(
+      const teamAPlayers = allPlayers.filter((p) => teamA.includes(p.id));
+      const teamBPlayers = allPlayers.filter((p) => teamB.includes(p.id));
+
+      const [updatedTeamA, updatedTeamB] = eloSystem.updateMatchRatings(
         teamAPlayers,
         teamBPlayers,
         scoreA,
         scoreB
       );
 
-      // Update players in the database
+      const updatedPlayers: any[] = [];
+
       for (const player of [...updatedTeamA, ...updatedTeamB]) {
+        const originalPlayer = allPlayers.find((p) => p.id === player.id);
+        if (!originalPlayer) {
+          console.error(`Player with id ${player.id} not found`);
+          continue;
+        }
+
+        const isWinner =
+          (teamA.includes(player.id) && scoreA > scoreB) ||
+          (teamB.includes(player.id) && scoreB > scoreA);
+
         await prisma.player.update({
           where: { id: player.id },
           data: {
-            elo: player.elo,
-            matches: player.matches,
-            wins: player.wins,
+            elo: Math.round(player.elo),
+            matches: { increment: 1 },
+            wins: isWinner ? { increment: 1 } : undefined,
           },
         });
-      }
-    }
 
-    return NextResponse.json(updatedMatch);
+        updatedPlayers.push({
+          playerId: player.id,
+          team: teamA.includes(player.id) ? "A" : "B",
+          paid: paymentStatus[player.id] || false,
+          eloBefore: originalPlayer.elo,
+          eloAfter: Math.round(player.elo),
+        });
+      }
+
+      const updatedMatch = await prisma.match.update({
+        where: { id: Number(params.id) },
+        data: {
+          date: new Date(date),
+          time,
+          price,
+          location,
+          result,
+          players: {
+            deleteMany: {},
+            create: updatedPlayers,
+          },
+        },
+        include: {
+          players: {
+            include: {
+              player: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(updatedMatch);
+    } else {
+      // If result hasn't changed, just update other fields
+      const updatedMatch = await prisma.match.update({
+        where: { id: Number(params.id) },
+        data: {
+          date: new Date(date),
+          time,
+          price,
+          location,
+          result,
+          players: {
+            deleteMany: {},
+            create: [
+              ...teamA.map((playerId: number) => ({
+                playerId,
+                team: "A",
+                paid: paymentStatus[playerId] || false,
+              })),
+              ...teamB.map((playerId: number) => ({
+                playerId,
+                team: "B",
+                paid: paymentStatus[playerId] || false,
+              })),
+            ],
+          },
+        },
+        include: {
+          players: {
+            include: {
+              player: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(updatedMatch);
+    }
   } catch (error) {
     console.error("Error updating match:", error);
     return NextResponse.json(
@@ -145,17 +166,48 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // First, delete all related PlayerMatch records
-    await prisma.playerMatch.deleteMany({
-      where: { matchId: Number(params.id) },
+    const match = await prisma.match.findUnique({
+      where: { id: Number(params.id) },
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
+        },
+      },
     });
 
-    // Then, delete the match
+    if (!match) {
+      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+    }
+
+    // Parse the result safely
+    const [scoreA, scoreB] = match.result?.split("-").map(Number) ?? [0, 0];
+    const winningTeam = scoreA > scoreB ? "A" : scoreB > scoreA ? "B" : null;
+
+    // Revert ELO changes for each player
+    for (const playerMatch of match.players) {
+      await prisma.player.update({
+        where: { id: playerMatch.player.id },
+        data: {
+          elo: playerMatch.eloBefore ?? undefined,
+          matches: { decrement: 1 },
+          wins:
+            winningTeam && playerMatch.team === winningTeam
+              ? { decrement: 1 }
+              : undefined,
+        },
+      });
+    }
+
+    // Delete the match
     await prisma.match.delete({
       where: { id: Number(params.id) },
     });
 
-    return NextResponse.json({ message: "Match deleted successfully" });
+    return NextResponse.json({
+      message: "Match deleted and ELO changes reverted",
+    });
   } catch (error) {
     console.error("Error deleting match:", error);
     return NextResponse.json(

@@ -59,7 +59,10 @@ export default function CreateMatch() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="container mx-auto mt-8 px-4 space-y-4"
+    >
       <h2 className="text-3xl font-bold mb-4">Create New Match</h2>
       <div>
         <label htmlFor="date" className="block mb-2">
@@ -71,7 +74,7 @@ export default function CreateMatch() {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -84,7 +87,7 @@ export default function CreateMatch() {
           value={time}
           onChange={(e) => setTime(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -97,7 +100,7 @@ export default function CreateMatch() {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -110,7 +113,7 @@ export default function CreateMatch() {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <TeamSelector
@@ -121,7 +124,7 @@ export default function CreateMatch() {
       />
       <button
         type="submit"
-        className="bg-[var(--primary)] text-white px-4 py-2 rounded"
+        className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
       >
         Create Match
       </button>

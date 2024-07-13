@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "Player" ADD COLUMN     "matches" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "wins" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "PlayerMatch" ADD COLUMN     "eloAfter" DOUBLE PRECISION,
+ADD COLUMN     "eloBefore" DOUBLE PRECISION;

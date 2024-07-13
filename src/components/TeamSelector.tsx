@@ -58,7 +58,9 @@ export default function TeamSelector({
     <li
       key={player.id}
       className={`cursor-pointer p-1 rounded flex justify-between items-center ${
-        selectedPlayer === player.id ? "bg-[var(--primary)] text-white" : ""
+        selectedPlayer === player.id
+          ? "bg-zinc-200 text-black dark:bg-zinc-500 dark:text-white"
+          : ""
       }`}
       onClick={() => handlePlayerSelect(player.id)}
     >
@@ -80,7 +82,7 @@ export default function TeamSelector({
             e.stopPropagation();
             handleRemoveFromTeam(player.id);
           }}
-          className="bg-[var(--secondary)] text-[var(--text)] px-2 py-1 rounded text-xs"
+          className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white px-2 py-1 rounded text-xs"
         >
           Remove
         </button>
@@ -88,18 +90,22 @@ export default function TeamSelector({
     </li>
   );
 
+  const sortedPlayers = [...unassignedPlayers].sort((a, b) =>
+    a.name.localeCompare(b.name)
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex space-x-4">
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Unassigned Players</h3>
-          <ul className="bg-[var(--card-bg)] p-2 rounded">
-            {unassignedPlayers.map((player) => renderPlayer(player, null))}
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white p-2 rounded">
+            {sortedPlayers.map((player) => renderPlayer(player, null))}
           </ul>
         </div>
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Team A</h3>
-          <ul className="bg-[var(--card-bg)] p-2 rounded">
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white p-2 rounded">
             {players
               .filter((p) => teamA.includes(p.id))
               .map((player) => renderPlayer(player, "A"))}
@@ -107,7 +113,7 @@ export default function TeamSelector({
         </div>
         <div className="w-1/3">
           <h3 className="font-bold mb-2">Team B</h3>
-          <ul className="bg-[var(--card-bg)] p-2 rounded">
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white p-2 rounded">
             {players
               .filter((p) => teamB.includes(p.id))
               .map((player) => renderPlayer(player, "B"))}
@@ -117,14 +123,59 @@ export default function TeamSelector({
       <div className="flex justify-center space-x-4">
         <button
           onClick={() => handleTeamAssign("A")}
-          className="bg-[var(--primary)] text-white px-4 py-2 rounded"
+          className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
           disabled={!selectedPlayer}
         >
           Assign to Team A
         </button>
         <button
           onClick={() => handleTeamAssign("B")}
-          className="bg-[var(--primary)] text-white px-4 py-2 rounded"
+          className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
+          disabled={!selectedPlayer}
+        >
+          Assign to Team B
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex space-x-4">
+        <div className="w-1/3">
+          <h3 className="font-bold mb-2">Unassigned Players</h3>
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-800 dark:text-white p-2 rounded">
+            {unassignedPlayers.map((player) => renderPlayer(player, null))}
+          </ul>
+        </div>
+        <div className="w-1/3">
+          <h3 className="font-bold mb-2">Team A</h3>
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white p-2 rounded">
+            {players
+              .filter((p) => teamA.includes(p.id))
+              .map((player) => renderPlayer(player, "A"))}
+          </ul>
+        </div>
+        <div className="w-1/3">
+          <h3 className="font-bold mb-2">Team B</h3>
+          <ul className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white p-2 rounded">
+            {players
+              .filter((p) => teamB.includes(p.id))
+              .map((player) => renderPlayer(player, "B"))}
+          </ul>
+        </div>
+      </div>
+      <div className="flex justify-center space-x-4">
+        <button
+          onClick={() => handleTeamAssign("A")}
+          className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
+          disabled={!selectedPlayer}
+        >
+          Assign to Team A
+        </button>
+        <button
+          onClick={() => handleTeamAssign("B")}
+          className="bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
           disabled={!selectedPlayer}
         >
           Assign to Team B

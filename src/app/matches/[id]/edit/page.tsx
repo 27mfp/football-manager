@@ -87,6 +87,10 @@ export default function EditMatch({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Parse the result to get scores
+    const [scoreA, scoreB] = result.split("-").map(Number);
+
     const response = await fetch(`/api/matches/${params.id}`, {
       method: "PUT",
       headers: {
@@ -101,19 +105,27 @@ export default function EditMatch({ params }: { params: { id: string } }) {
         teamA,
         teamB,
         paymentStatus,
+        scoreA,
+        scoreB,
       }),
     });
 
     if (response.ok) {
       router.push("/matches");
       router.refresh();
+    } else {
+      // Handle error
+      console.error("Failed to update match");
     }
   };
 
   if (!match) return <div>Loading...</div>;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form
+      onSubmit={handleSubmit}
+      className="container mx-auto mt-8 px-4 space-y-4"
+    >
       <h2 className="text-3xl font-bold mb-4">Edit Match</h2>
       <div>
         <label htmlFor="date" className="block mb-2">
@@ -125,7 +137,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -138,7 +150,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={time}
           onChange={(e) => setTime(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -151,7 +163,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={price}
           onChange={(e) => setPrice(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -164,7 +176,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           value={location}
           onChange={(e) => setLocation(e.target.value)}
           required
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
         />
       </div>
       <div>
@@ -176,7 +188,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
           id="result"
           value={result}
           onChange={(e) => setResult(e.target.value)}
-          className="w-full p-2 rounded bg-[var(--card-bg)] text-[var(--text)]"
+          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
           placeholder="e.g. 3-2"
         />
       </div>
@@ -189,7 +201,7 @@ export default function EditMatch({ params }: { params: { id: string } }) {
       />
       <button
         type="submit"
-        className="bg-[var(--primary)] text-white px-4 py-2 rounded"
+        className="dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
       >
         Update Match
       </button>

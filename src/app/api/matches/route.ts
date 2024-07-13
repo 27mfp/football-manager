@@ -1,18 +1,46 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { gameOver } from "@/utils/eloCalculation";
 
 export async function GET() {
-  const matches = await prisma.match.findMany({
-    include: {
-      players: {
-        include: {
-          player: true,
+  try {
+    const matches = await prisma.match.findMany({
+      include: {
+        players: {
+          include: {
+            player: true,
+          },
         },
       },
-    },
-  });
-  return NextResponse.json(matches);
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    const matchesWithPaymentInfo = matches.map((match) => {
+      const totalPlayers = match.players.length;
+      const pricePerPlayer = totalPlayers > 0 ? match.price / totalPlayers : 0;
+      const totalPaid = match.players.reduce(
+        (total, pm) => total + (pm.paid ? pricePerPlayer : 0),
+        0
+      );
+      const totalToPay = match.price - totalPaid;
+
+      return {
+        ...match,
+        pricePerPlayer,
+        totalPaid,
+        totalToPay,
+      };
+    });
+
+    return NextResponse.json(matchesWithPaymentInfo);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch matches" },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {

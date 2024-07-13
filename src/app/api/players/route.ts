@@ -5,46 +5,47 @@ export async function GET() {
   try {
     const players = await prisma.player.findMany({
       include: {
-        playerMatches: {
-          include: {
-            match: {
-              include: {
-                players: true,
-              },
-            },
-          },
-        },
+        playerMatches: true,
       },
     });
 
-    const playersWithDetails = players.map((player) => {
-      const matchesPlayed = player.playerMatches.length;
-      const amountToPay = player.playerMatches.reduce((total, pm) => {
-        if (!pm.paid) {
-          const match = pm.match;
-          const playersInMatch = match.players.length;
-          const pricePerPlayer = match.price / playersInMatch;
-          return total + pricePerPlayer;
-        }
-        return total;
-      }, 0);
+    const playersWithStats = players.map((player) => ({
+      id: player.id,
+      name: player.name,
+      elo: player.elo,
+      matches: player.playerMatches.length,
+      wins: player.wins,
+    }));
 
-      return {
-        id: player.id,
-        name: player.name,
-        elo: player.elo,
-        matches: player.matches || 0,
-        wins: player.wins || 0,
-        matchesPlayed,
-        amountToPay: Number(amountToPay.toFixed(2)),
-      };
-    });
-
-    return NextResponse.json(playersWithDetails);
+    return NextResponse.json(playersWithStats);
   } catch (error) {
     console.error("Error fetching players:", error);
     return NextResponse.json(
       { error: "Failed to fetch players" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { name, elo, matches, wins } = body;
+
+    const newPlayer = await prisma.player.create({
+      data: {
+        name,
+        elo,
+        matches,
+        wins,
+      },
+    });
+
+    return NextResponse.json(newPlayer);
+  } catch (error) {
+    console.error("Error creating player:", error);
+    return NextResponse.json(
+      { error: "Failed to create player" },
       { status: 500 }
     );
   }
