@@ -1,36 +1,116 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Football Manager
+
+Football Manager is a web application for managing football matches, player statistics, and ELO ratings. It allows users to create, edit, and delete matches, manage players, and automatically calculate ELO ratings based on match results.
+
+## Features
+
+- Create, edit, and delete football matches
+- Manage player information and statistics
+- Automatic ELO rating calculations
+- Track player payments for matches
+- View match history and results
+
+## Technologies Used
+
+- Next.js
+- React
+- TypeScript
+- Prisma (for database management)
+- PostgreSQL (as the database)
+- Tailwind CSS (for styling)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Node.js (v14 or later)
+- npm or yarn
+- PostgreSQL database
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Clone the repository:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+git clone https://github.com/yourusername/football-manager.git
+cd football-manager
 
-## Learn More
+# ⚽ Football Manager
 
-To learn more about Next.js, take a look at the following resources:
+## 📌 Overview
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Football Manager is a web application for organizing football matches, tracking player statistics, and managing ELO ratings. It provides an interface for match management, player tracking, and automated ELO calculations.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+## 🌟 Key Features
 
-## Deploy on Vercel
+- 🏟️ Match Management: Create, edit, and delete football matches
+- 👥 Player Profiles: Maintain player information and statistics
+- 🏆 ELO System: Automatic ELO rating calculations based on match outcomes
+- 💰 Payment Tracking: Monitor player payments for matches
+- 📊 Match History: View match results and statistics
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🛠️ Tech Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+- ⚛️ Next.js & React
+- 🔷 TypeScript
+- 🗃️ Prisma (ORM)
+- 🐘 PostgreSQL
+- 🎨 Tailwind CSS
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js (v14+)
+- npm or yarn
+- PostgreSQL database
+
+### Installation
+
+1. 📥 Clone the repository:
+
+   ```
+   git clone https://github.com/yourusername/football-manager.git
+   cd football-manager
+   ```
+
+2. 📦 Install dependencies:
+
+   ```
+   npm install
+   ```
+
+3. 🔑 Set up environment variables:
+   Create a `.env` file in the root directory with your database URL:
+
+   ```
+   DATABASE_URL="postgresql://username:password@localhost:5432/football_manager"
+   ```
+
+4. 🗄️ Set up the database:
+
+   ```
+   npx prisma migrate dev
+   ```
+
+5. 🖥️ Start the development server:
+
+   ```
+   npm run dev
+   ```
+
+6. 🌐 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 📘 Usage
+
+- 🏟️ Create and manage matches from the Matches page
+- 👥 Add and edit player information on the Players page
+- 🏆 ELO ratings are automatically updated after each match
+- 📊 View match history and player statistics in their respective sections
+
+## 🤝 Contributing
+
+Contributions are welcome. Please feel free to submit a Pull Request.
+
+## 📄 License
+
+This project is licensed under the MIT License.
