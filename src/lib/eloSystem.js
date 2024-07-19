@@ -2,7 +2,6 @@ class EloSystem {
   constructor(config = {}) {
     this.config = {
       kFactor: config.kFactor || 50, // The K-factor determines the magnitude of Elo rating changes
-      maxGoalDifference: config.maxGoalDifference || 3, // The maximum allowed goal difference in a match
     };
   }
 
@@ -38,27 +37,16 @@ class EloSystem {
     };
   }
 
-  calculateNewRating(
-    playerRating,
-    opponentRating,
-    actualScore,
-    goalDifference
-  ) {
+  calculateNewRating(playerRating, opponentRating, actualScore) {
     // Calculates the new Elo rating for a player after a match
     const expectedScore = this.calculateExpectedScore(
       playerRating,
       opponentRating
     );
 
-    // Calculates the score factor based on the goal difference
-    const scoreFactor =
-      Math.min(Math.abs(goalDifference), this.config.maxGoalDifference) /
-      this.config.maxGoalDifference;
-
     // Calculates the new rating using the Elo formula
     return Math.round(
-      playerRating +
-        this.config.kFactor * scoreFactor * (actualScore - expectedScore)
+      playerRating + this.config.kFactor * (actualScore - expectedScore)
     );
   }
 
@@ -69,33 +57,47 @@ class EloSystem {
 
   updateMatchRatings(team1, team2, score1, score2) {
     // Updates the Elo ratings of players in both teams after a match
-    const goalDifference = score1 - score2;
     const team1AvgRating = this.calculateTeamAverageRating(team1);
     const team2AvgRating = this.calculateTeamAverageRating(team2);
 
-    const updateTeam = (team, opponentAvgRating, won) => {
+    const updateTeam = (team, opponentAvgRating, result) => {
       // Updates the Elo ratings of players in a team
       return team.map((player) => {
-        const actualScore = won ? 1 : goalDifference === 0 ? 0.5 : 0;
+        let actualScore;
+        if (result === "win") actualScore = 1;
+        else if (result === "loss") actualScore = 0;
+        else actualScore = 0.5; // draw
+
         const newRating = this.calculateNewRating(
           player.elo,
           opponentAvgRating,
-          actualScore,
-          goalDifference
+          actualScore
         );
 
         return {
           ...player,
           elo: newRating,
           matches: player.matches + 1,
-          wins: player.wins + (won ? 1 : 0),
+          wins: player.wins + (result === "win" ? 1 : 0),
         };
       });
     };
 
+    // Determine the match result
+    let team1Result, team2Result;
+    if (score1 > score2) {
+      team1Result = "win";
+      team2Result = "loss";
+    } else if (score1 < score2) {
+      team1Result = "loss";
+      team2Result = "win";
+    } else {
+      team1Result = team2Result = "draw";
+    }
+
     // Updates the Elo ratings of players in both teams
-    const updatedTeam1 = updateTeam(team1, team2AvgRating, goalDifference > 0);
-    const updatedTeam2 = updateTeam(team2, team1AvgRating, goalDifference < 0);
+    const updatedTeam1 = updateTeam(team1, team2AvgRating, team1Result);
+    const updatedTeam2 = updateTeam(team2, team1AvgRating, team2Result);
 
     return [updatedTeam1, updatedTeam2];
   }
@@ -103,7 +105,6 @@ class EloSystem {
 
 const eloSystem = new EloSystem({
   kFactor: 50, // Default K-factor value
-  maxGoalDifference: 3, // Default maximum goal difference value
 });
 
 export default eloSystem;

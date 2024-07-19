@@ -70,16 +70,13 @@ export async function PUT(
           continue;
         }
 
-        const isWinner =
-          (teamA.includes(player.id) && scoreA > scoreB) ||
-          (teamB.includes(player.id) && scoreB > scoreA);
-
         await prisma.player.update({
           where: { id: player.id },
           data: {
             elo: Math.round(player.elo),
             matches: { increment: 1 },
-            wins: isWinner ? { increment: 1 } : undefined,
+            wins:
+              player.wins > originalPlayer.wins ? { increment: 1 } : undefined,
           },
         });
 
@@ -166,8 +163,11 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const matchId = Number(params.id);
+
+    // First, fetch the match to get player information
     const match = await prisma.match.findUnique({
-      where: { id: Number(params.id) },
+      where: { id: matchId },
       include: {
         players: {
           include: {
@@ -200,13 +200,18 @@ export async function DELETE(
       });
     }
 
-    // Delete the match
+    // Delete all PlayerMatch records associated with this match
+    await prisma.playerMatch.deleteMany({
+      where: { matchId: matchId },
+    });
+
+    // Now delete the match
     await prisma.match.delete({
-      where: { id: Number(params.id) },
+      where: { id: matchId },
     });
 
     return NextResponse.json({
-      message: "Match deleted and ELO changes reverted",
+      message: "Match and associated records deleted, ELO changes reverted",
     });
   } catch (error) {
     console.error("Error deleting match:", error);
