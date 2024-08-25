@@ -97,9 +97,7 @@ export default function TeamGenerator() {
             <h3 className="text-xl font-bold mb-2">Team A</h3>
             <ul className="bg-zinc-200 dark:bg-zinc-800 rounded p-2">
               {teamA.map((player) => (
-                <li key={player.id}>
-                  {player.name} (Elo: {player.elo})
-                </li>
+                <li key={player.id}>{player.name}</li>
               ))}
             </ul>
             <p className="mt-2 text-center">
@@ -110,9 +108,7 @@ export default function TeamGenerator() {
             <h3 className="text-xl font-bold mb-2">Team B</h3>
             <ul className="bg-zinc-200 dark:bg-zinc-800 rounded p-2">
               {teamB.map((player) => (
-                <li key={player.id}>
-                  {player.name} (Elo: {player.elo})
-                </li>
+                <li key={player.id}>{player.name}</li>
               ))}
             </ul>
             <p className="mt-2 text-center">
