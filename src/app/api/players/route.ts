@@ -1,6 +1,30 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 
+interface PlayerMatch {
+  id: number;
+  matchId: number;
+  playerId: number;
+  paid: boolean;
+}
+
+interface Player {
+  id: number;
+  name: string;
+  elo: number;
+  matches: number;
+  wins: number;
+  playerMatches: PlayerMatch[];
+}
+
+interface PlayerStats {
+  id: number;
+  name: string;
+  elo: number;
+  matches: number;
+  wins: number;
+}
+
 export async function GET() {
   try {
     const players = await prisma.player.findMany({
@@ -9,13 +33,15 @@ export async function GET() {
       },
     });
 
-    const playersWithStats = players.map((player) => ({
-      id: player.id,
-      name: player.name,
-      elo: player.elo,
-      matches: player.playerMatches.length,
-      wins: player.wins,
-    }));
+    const playersWithStats = players.map(
+      (player: Player): PlayerStats => ({
+        id: player.id,
+        name: player.name,
+        elo: player.elo,
+        matches: player.playerMatches.length,
+        wins: player.wins,
+      })
+    );
 
     return NextResponse.json(playersWithStats);
   } catch (error) {
@@ -27,9 +53,16 @@ export async function GET() {
   }
 }
 
+interface CreatePlayerBody {
+  name: string;
+  elo: number;
+  matches: number;
+  wins: number;
+}
+
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body: CreatePlayerBody = await request.json();
     const { name, elo, matches, wins } = body;
 
     const newPlayer = await prisma.player.create({

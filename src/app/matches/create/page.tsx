@@ -1,9 +1,29 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import TeamSelector from "@/components/TeamSelector";
 import WeatherForecast from "@/components/WeatherForecast";
 import { appConfig } from "@/config/appConfig";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CalendarDays, Clock, Euro, MapPin } from "lucide-react";
+import { PageTitle } from "@/components/PageTitle";
 
 interface Player {
   id: number;
@@ -22,6 +42,9 @@ export default function CreateMatch() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [teamA, setTeamA] = useState<number[]>([]);
   const [teamB, setTeamB] = useState<number[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   useEffect(() => {
     fetchPlayers();
@@ -30,7 +53,10 @@ export default function CreateMatch() {
   const fetchPlayers = async () => {
     const res = await fetch("/api/players");
     const data = await res.json();
-    setPlayers(data);
+    const sortedPlayers = data.sort((a: Player, b: Player) =>
+      a.name.localeCompare(b.name)
+    );
+    setPlayers(sortedPlayers);
   };
 
   const handleTeamsChange = (newTeamA: number[], newTeamB: number[]) => {
@@ -69,121 +95,143 @@ export default function CreateMatch() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold mb-6 text-center text-zinc-800 dark:text-white">
-        Create New Match
-      </h2>
-      <form
-        onSubmit={handleSubmit}
-        className="max-w-2xl mx-auto bg-white dark:bg-zinc-800 shadow-md rounded-lg overflow-hidden"
-      >
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label
-                htmlFor="date"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-              >
-                Date
-              </label>
-              <input
-                type="date"
-                id="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="time"
-                className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-              >
-                Time
-              </label>
-              <input
-                type="time"
-                id="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                required
-                className="w-full p-2 rounded border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div>
-            <label
-              htmlFor="price"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-            >
-              Price
-            </label>
-            <div className="mt-1 relative rounded-md shadow-sm">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-zinc-500 sm:text-sm">€</span>
-              </div>
-              <input
-                type="number"
-                id="price"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                required
-                className="w-full pl-7 p-2 rounded border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
-          <div>
-            <label
-              htmlFor="location"
-              className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
-            >
-              Location
-            </label>
-            <div className="flex items-center">
-              <select
-                id="location"
-                value={selectedLocationId}
-                onChange={(e) => setSelectedLocationId(Number(e.target.value))}
-                required
-                className="flex-grow p-2 rounded-l border border-r-0 border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-800 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-              >
-                {appConfig.matchLocations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name}
-                  </option>
-                ))}
-              </select>
-              {date && time && selectedLocation && (
-                <div className="bg-zinc-100 dark:bg-zinc-600 p-2 rounded-r border border-l-0 border-zinc-300 dark:border-zinc-600">
-                  <WeatherForecast
-                    date={date}
-                    time={time}
-                    latitude={selectedLocation.latitude}
-                    longitude={selectedLocation.longitude}
+      <PageTitle title="Create Match" />
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-3xl font-bold mb-6 text-zinc-800 dark:text-zinc-200">
+          Create New Match
+        </h2>
+
+        <form onSubmit={handleSubmit}>
+          <Card className="border-zinc-200 dark:border-zinc-800">
+            <CardHeader>
+              <CardTitle className="text-xl text-zinc-800 dark:text-zinc-200">
+                Match Details
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Date Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="date" className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4" />
+                    Date
+                  </Label>
+                  <Input
+                    type="date"
+                    id="date"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                    required
+                    className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
                   />
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="p-6 bg-zinc-50 dark:bg-zinc-700">
-          <TeamSelector
-            players={players}
-            teamA={teamA}
-            teamB={teamB}
-            onTeamsChange={handleTeamsChange}
-          />
-        </div>
-        <div className="px-6 py-4 bg-zinc-100 dark:bg-zinc-800 border-t border-zinc-200 dark:border-zinc-700">
-          <button
-            type="submit"
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-          >
-            Create Match
-          </button>
-        </div>
-      </form>
+
+                {/* Time Field */}
+                <div className="space-y-2">
+                  <Label htmlFor="time" className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Time
+                  </Label>
+                  <Input
+                    type="time"
+                    id="time"
+                    value={time}
+                    onChange={(e) => setTime(e.target.value)}
+                    required
+                    className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                  />
+                </div>
+              </div>
+
+              {/* Price Field */}
+              <div className="space-y-2">
+                <Label htmlFor="price" className="flex items-center gap-2">
+                  <Euro className="h-4 w-4" />
+                  Price
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500">
+                    €
+                  </span>
+                  <Input
+                    type="number"
+                    id="price"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    required
+                    className="pl-8 bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Location Field */}
+              <div className="space-y-2">
+                <Label htmlFor="location" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Location
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    value={selectedLocationId.toString()}
+                    onValueChange={(value) =>
+                      setSelectedLocationId(Number(value))
+                    }
+                  >
+                    <SelectTrigger className="bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700">
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {appConfig.matchLocations.map((location) => (
+                        <SelectItem
+                          key={location.id}
+                          value={location.id.toString()}
+                        >
+                          {location.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {date && time && selectedLocation && (
+                    <div className="bg-zinc-100 dark:bg-zinc-800 p-2 rounded-md border border-zinc-200 dark:border-zinc-700">
+                      <WeatherForecast
+                        date={date}
+                        time={time}
+                        latitude={selectedLocation.latitude}
+                        longitude={selectedLocation.longitude}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Team Selector */}
+              <Card className="border-zinc-200 dark:border-zinc-800">
+                <CardContent className="pt-6">
+                  <TeamSelector
+                    players={players}
+                    teamA={teamA}
+                    teamB={teamB}
+                    paymentStatus={paymentStatus}
+                    onTeamsChange={handleTeamsChange}
+                  />
+                </CardContent>
+              </Card>
+            </CardContent>
+
+            <CardFooter className="bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-200 dark:border-zinc-700">
+              <Button
+                type="submit"
+                className="w-full bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 mt-4 dark:text-white"
+              >
+                Create Match
+              </Button>
+            </CardFooter>
+          </Card>
+        </form>
+      </div>
     </div>
   );
 }

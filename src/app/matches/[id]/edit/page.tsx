@@ -1,8 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import TeamSelector from "@/components/TeamSelector";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Player {
   id: number;
@@ -12,9 +22,13 @@ interface Player {
 
 interface PlayerMatch {
   id: number;
-  player: Player;
+  matchId: number;
+  playerId: number;
   team: string;
   paid: boolean;
+  player: Player;
+  eloBefore?: number | null;
+  eloAfter?: number | null;
 }
 
 interface Match {
@@ -29,6 +43,7 @@ interface Match {
 
 export default function EditMatch({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [match, setMatch] = useState<Match | null>(null);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -42,42 +57,63 @@ export default function EditMatch({ params }: { params: { id: string } }) {
     [key: number]: boolean;
   }>({});
 
+  const fetchMatch = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch(`/api/matches`);
+      const matches = await res.json();
+      const matchData = matches.find((m: Match) => m.id === Number(params.id));
+
+      if (!matchData) {
+        throw new Error("Match not found");
+      }
+
+      setMatch(matchData);
+      setDate(new Date(matchData.date).toISOString().split("T")[0]);
+      setTime(matchData.time);
+      setPrice(matchData.price.toString());
+      setLocation(matchData.location);
+      setResult(matchData.result || "");
+
+      // Set teams with proper typing
+      setTeamA(
+        matchData.players
+          .filter((pm: PlayerMatch) => pm.team === "A")
+          .map((pm: PlayerMatch) => pm.player.id)
+      );
+
+      setTeamB(
+        matchData.players
+          .filter((pm: PlayerMatch) => pm.team === "B")
+          .map((pm: PlayerMatch) => pm.player.id)
+      );
+
+      // Set payment status
+      const status: { [key: number]: boolean } = {};
+      matchData.players.forEach((pm: PlayerMatch) => {
+        status[pm.player.id] = pm.paid;
+      });
+      setPaymentStatus(status);
+    } catch (error) {
+      console.error("Error fetching match:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params.id]);
+
   useEffect(() => {
     fetchMatch();
     fetchPlayers();
-  }, []);
-
-  const fetchMatch = async () => {
-    const res = await fetch(`/api/matches/${params.id}`);
-    const data = await res.json();
-    setMatch(data);
-    setDate(data.date.split("T")[0]);
-    setTime(data.time);
-    setPrice(data.price.toString());
-    setLocation(data.location);
-    setResult(data.result || "");
-    setTeamA(
-      data.players
-        .filter((pm: PlayerMatch) => pm.team === "A")
-        .map((pm: PlayerMatch) => pm.player.id)
-    );
-    setTeamB(
-      data.players
-        .filter((pm: PlayerMatch) => pm.team === "B")
-        .map((pm: PlayerMatch) => pm.player.id)
-    );
-
-    const status: { [key: number]: boolean } = {};
-    data.players.forEach((pm: PlayerMatch) => {
-      status[pm.player.id] = pm.paid;
-    });
-    setPaymentStatus(status);
-  };
+  }, [fetchMatch]);
 
   const fetchPlayers = async () => {
-    const res = await fetch("/api/players");
-    const data = await res.json();
-    setAllPlayers(data);
+    try {
+      const res = await fetch("/api/players");
+      const data = await res.json();
+      setAllPlayers(data);
+    } catch (error) {
+      console.error("Error fetching players:", error);
+    }
   };
 
   const handleTeamsChange = (newTeamA: number[], newTeamB: number[]) => {
@@ -87,124 +123,138 @@ export default function EditMatch({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const [scoreA, scoreB] = result
+        ? result.split("-").map(Number)
+        : [null, null];
 
-    // Parse the result to get scores
-    const [scoreA, scoreB] = result.split("-").map(Number);
+      const response = await fetch(`/api/matches/${params.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date,
+          time,
+          price: parseFloat(price),
+          location,
+          result,
+          teamA,
+          teamB,
+          paymentStatus,
+          scoreA,
+          scoreB,
+        }),
+      });
 
-    const response = await fetch(`/api/matches/${params.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        date,
-        time,
-        price: parseFloat(price),
-        location,
-        result,
-        teamA,
-        teamB,
-        paymentStatus,
-        scoreA,
-        scoreB,
-      }),
-    });
+      if (!response.ok) {
+        throw new Error("Failed to update match");
+      }
 
-    if (response.ok) {
       router.push("/matches");
       router.refresh();
-    } else {
-      // Handle error
-      console.error("Failed to update match");
+    } catch (error) {
+      console.error("Error updating match:", error);
     }
   };
 
-  if (!match) return <div>Loading...</div>;
+  if (isLoading) {
+    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+  }
+
+  if (!match) {
+    return <div className="container mx-auto px-4 py-8">Match not found</div>;
+  }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="container mx-auto mt-8 px-4 space-y-4"
-    >
-      <h2 className="text-3xl font-bold mb-4">Edit Match</h2>
-      <div>
-        <label htmlFor="date" className="block mb-2">
-          Date:
-        </label>
-        <input
-          type="date"
-          id="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
-        />
-      </div>
-      <div>
-        <label htmlFor="time" className="block mb-2">
-          Time:
-        </label>
-        <input
-          type="time"
-          id="time"
-          value={time}
-          onChange={(e) => setTime(e.target.value)}
-          required
-          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
-        />
-      </div>
-      <div>
-        <label htmlFor="price" className="block mb-2">
-          Price:
-        </label>
-        <input
-          type="number"
-          id="price"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          required
-          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
-        />
-      </div>
-      <div>
-        <label htmlFor="location" className="block mb-2">
-          Location:
-        </label>
-        <input
-          type="text"
-          id="location"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          required
-          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
-        />
-      </div>
-      <div>
-        <label htmlFor="result" className="block mb-2">
-          Result:
-        </label>
-        <input
-          type="text"
-          id="result"
-          value={result}
-          onChange={(e) => setResult(e.target.value)}
-          className="w-full p-2 rounded bg-zinc-100 text-black dark:bg-zinc-700 dark:text-white"
-          placeholder="e.g. 3-2"
-        />
-      </div>
-      <TeamSelector
-        players={allPlayers}
-        teamA={teamA}
-        teamB={teamB}
-        onTeamsChange={handleTeamsChange}
-        paymentStatus={paymentStatus}
-      />
-      <button
-        type="submit"
-        className="dark:bg-zinc-700 dark:text-white dark:hover:bg-zinc-800 px-4 py-2 rounded"
-      >
-        Update Match
-      </button>
-    </form>
+    <div className="container mx-auto px-4 py-8">
+      <Card className="max-w-6xl mx-auto">
+        <CardHeader>
+          <CardTitle>Edit Match</CardTitle>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                type="date"
+                id="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="time">Time</Label>
+              <Input
+                type="time"
+                id="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="price">Price</Label>
+              <Input
+                type="number"
+                id="price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                type="text"
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="result">Result</Label>
+              <Input
+                type="text"
+                id="result"
+                value={result}
+                onChange={(e) => setResult(e.target.value)}
+                placeholder="e.g. 3-2"
+              />
+            </div>
+
+            <TeamSelector
+              players={allPlayers}
+              teamA={teamA}
+              teamB={teamB}
+              onTeamsChange={handleTeamsChange}
+              paymentStatus={paymentStatus}
+            />
+          </CardContent>
+
+          <CardFooter className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/matches")}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-white"
+            >
+              Update Match
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   );
 }

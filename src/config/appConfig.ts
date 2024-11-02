@@ -18,5 +18,29 @@ export const appConfig = {
       latitude: 38.7846,
       longitude: -9.3364,
     },
+    {
+      id: 4,
+      name: "Escola Amadora, Futsal, 5v5",
+      latitude: 38.7451,
+      longitude: -9.2284,
+    },
+    {
+      id: 5,
+      name: "Belém Coberto, Sintético, 5v5",
+      latitude: 38.7016,
+      longitude: -9.2093,
+    },
+    {
+      id: 6,
+      name: "Linhó, Futsal, 5v5",
+      latitude: 38.7664,
+      longitude: -9.3826,
+    },
+    {
+      id: 7,
+      name: "Teste",
+      latitude: 0.0,
+      longitude: 0.0,
+    },
   ],
 };

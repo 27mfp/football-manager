@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: football-app
+    ports:
+      - "7000:700"
+    restart: unless-stopped

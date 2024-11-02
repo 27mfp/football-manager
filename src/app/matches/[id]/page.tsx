@@ -1,7 +1,32 @@
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 
-async function getMatch(id: string) {
+interface Player {
+  id: number;
+  name: string;
+  elo: number;
+}
+
+interface PlayerMatch {
+  id: number;
+  matchId: number;
+  playerId: number;
+  team: string;
+  paid: boolean;
+  player: Player;
+}
+
+interface Match {
+  id: number;
+  date: Date;
+  time: string;
+  location: string;
+  price: number;
+  result: string | null;
+  players: PlayerMatch[];
+}
+
+async function getMatch(id: string): Promise<Match | null> {
   return await prisma.match.findUnique({
     where: { id: parseInt(id) },
     include: {
@@ -25,8 +50,8 @@ export default async function MatchDetail({
     return <div>Match not found</div>;
   }
 
-  const teamA = match.players.filter((pm) => pm.team === "A");
-  const teamB = match.players.filter((pm) => pm.team === "B");
+  const teamA = match.players.filter((pm: PlayerMatch) => pm.team === "A");
+  const teamB = match.players.filter((pm: PlayerMatch) => pm.team === "B");
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -51,7 +76,7 @@ export default async function MatchDetail({
         <div className="mt-4">
           <h3 className="text-xl font-semibold mb-2">Team A</h3>
           <ul className="list-disc list-inside">
-            {teamA.map((pm) => (
+            {teamA.map((pm: PlayerMatch) => (
               <li key={pm.id}>
                 {pm.player.name} (Elo: {pm.player.elo.toFixed(0)})
                 <span
@@ -69,7 +94,7 @@ export default async function MatchDetail({
         <div className="mt-4">
           <h3 className="text-xl font-semibold mb-2">Team B</h3>
           <ul className="list-disc list-inside">
-            {teamB.map((pm) => (
+            {teamB.map((pm: PlayerMatch) => (
               <li key={pm.id}>
                 {pm.player.name} (Elo: {pm.player.elo.toFixed(0)})
                 <span

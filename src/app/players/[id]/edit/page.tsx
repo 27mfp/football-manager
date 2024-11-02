@@ -1,7 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft } from "lucide-react";
+import { PageTitle } from "@/components/PageTitle";
 
 interface Player {
   id: number;
@@ -16,11 +23,7 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    fetchPlayer();
-  }, []);
-
-  const fetchPlayer = async () => {
+  const fetchPlayer = useCallback(async () => {
     try {
       setIsLoading(true);
       const res = await fetch(`/api/players/${params.id}`);
@@ -32,7 +35,11 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchPlayer();
+  }, [fetchPlayer]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -60,99 +67,112 @@ export default function EditPlayerPage({ params }: { params: { id: string } }) {
   };
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <PageTitle title="Loading..." />
+        <div className="text-center">Loading...</div>
+      </div>
+    );
   }
 
   if (!player) {
-    return <div className="container mx-auto px-4 py-8">Player not found</div>;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <PageTitle title="Player Not Found" />
+        <div className="text-center">Player not found</div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-zinc-800 dark:text-white mb-6">
-        Edit Player
-      </h1>
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white dark:bg-zinc-800 shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div className="mb-4">
-          <label
-            className="block text-zinc-700 dark:text-zinc-300 text-sm font-bold mb-2"
-            htmlFor="name"
-          >
-            Name:
-          </label>
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={player.name}
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-zinc-700 dark:text-zinc-300 leading-tight focus:outline-none focus:shadow-outline dark:bg-zinc-700 dark:border-zinc-600"
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            className="block text-zinc-700 dark:text-zinc-300 text-sm font-bold mb-2"
-            htmlFor="elo"
-          >
-            Elo:
-          </label>
-          <input
-            type="number"
-            id="elo"
-            name="elo"
-            value={player.elo}
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-zinc-700 dark:text-zinc-300 leading-tight focus:outline-none focus:shadow-outline dark:bg-zinc-700 dark:border-zinc-600"
-          />
-        </div>
-        <div className="mb-4">
-          <label
-            className="block text-zinc-700 dark:text-zinc-300 text-sm font-bold mb-2"
-            htmlFor="matches"
-          >
-            Matches:
-          </label>
-          <input
-            type="number"
-            id="matches"
-            name="matches"
-            value={player.matches}
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-zinc-700 dark:text-zinc-300 leading-tight focus:outline-none focus:shadow-outline dark:bg-zinc-700 dark:border-zinc-600"
-          />
-        </div>
+      <PageTitle title={`Edit ${player.name}`} />
+
+      <div className="max-w-2xl mx-auto">
         <div className="mb-6">
-          <label
-            className="block text-zinc-700 dark:text-zinc-300 text-sm font-bold mb-2"
-            htmlFor="wins"
-          >
-            Wins:
-          </label>
-          <input
-            type="number"
-            id="wins"
-            name="wins"
-            value={player.wins}
-            onChange={handleChange}
-            required
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-zinc-700 dark:text-zinc-300 leading-tight focus:outline-none focus:shadow-outline dark:bg-zinc-700 dark:border-zinc-600"
-          />
+          <Link href="/players">
+            <Button
+              variant="ghost"
+              className="hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Players
+            </Button>
+          </Link>
         </div>
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Update Player
-          </button>
-        </div>
-      </form>
+
+        <Card className="border-zinc-200 dark:border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
+              Edit Player: {player.name}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={player.name}
+                  onChange={handleChange}
+                  required
+                  className="dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="elo">Elo Rating</Label>
+                <Input
+                  type="number"
+                  id="elo"
+                  name="elo"
+                  value={player.elo}
+                  onChange={handleChange}
+                  required
+                  className="dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="matches">Matches Played</Label>
+                <Input
+                  type="number"
+                  id="matches"
+                  name="matches"
+                  value={player.matches}
+                  onChange={handleChange}
+                  required
+                  className="dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="wins">Wins</Label>
+                <Input
+                  type="number"
+                  id="wins"
+                  name="wins"
+                  value={player.wins}
+                  onChange={handleChange}
+                  required
+                  className="dark:border-zinc-700 dark:bg-zinc-900"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="bg-zinc-800 hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 dark:text-white"
+                >
+                  Update Player
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
